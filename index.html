@@ -127,7 +127,7 @@
       rows[rowNum-1] = text;
     }
     // 40 merkkiä / rivi
-    return rows.map(r => r.slice(0,40),padEnd(40,"")).join("\n");
+    return rows.map(r => (r + "                                        ").slice(0,40)).join("\n");
   }
 
   // Lataa etusivu
