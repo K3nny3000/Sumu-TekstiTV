@@ -1,12 +1,13 @@
-DE,
+DE,500
 PS,8100
 PN,5007F
 SC,3F7F
 RE,0
-OL,1,A---------------------------------------
-OL,2,ASumu-teksti tv    500  Pikselitaide    
-OL,3,A---------------------------------------
+OL,1,---------------------------------------
+OL,2,Sumu-teksti tv    500  Pikselitaide    
+OL,3,---------------------------------------
 OL,5, T{m{ on pikselitaide sivujen p{{sivu.  
 OL,6, Seuraavalta sivulta eteenp{in l|yd{t   
 OL,7, erilaisia pikselitaide teoksia         
 OL,13,  ANTOISAA TAIDE HETKE[!                
+
