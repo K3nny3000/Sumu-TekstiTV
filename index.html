@@ -122,7 +122,7 @@
       text = text.replace(/(^|\s)Q[A-Z](?=\s|$)/g,""); // QA/QB/QC jne.
       text = text.replace(/\x0[0-9A-F]/g,"");      // 0x00–0x0F kontrollit
       text = xlat(text);
-
+      text = text.replace(/[\x00-\x1F\u25A11]/g,"");
       rows[rowNum-1] = text;
     }
     // 40 merkkiä / rivi
