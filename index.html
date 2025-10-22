@@ -75,7 +75,34 @@
   input.addEventListener("keydown", e=>{
     if(e.key==="Enter") goToPage();
   });
+async function loadPage(n) {
+  const requested = parseInt(String(n).trim(), 10);
+  if (Number.isNaN(requested)) return;
 
+  try {
+    const res = await fetch(`${requested}.tti`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const raw = await res.text();
+
+    const rendered = renderTti(raw);
+    document.getElementById('page').textContent = rendered;
+
+    // tämä päivittää sekä vihreän rivin että otsikon oikeaksi
+    document.getElementById('curPage').textContent = requested;
+
+    // jos yläbannerissa on erillinen otsikko-elementti, päivitä sekin:
+    const header = document.querySelector('#page h2, #page h1, #pageHeader');
+    if (header) {
+      header.innerText = `Sumu teksti-tv ${requested} UUTISET`;
+    }
+
+    document.getElementById('status').innerHTML =
+      `Sivu <span id="curPage">${requested}</span> ladattu.`;
+  } catch (e) {
+    document.getElementById('page').textContent =
+      `Virhe ladattaessa sivua ${requested}:\n${e.message}`;
+  }
+}
   async function loadPage(n){
     const num = String(n);
     if(!pages[n]){
