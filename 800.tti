@@ -1,11 +1,11 @@
-DE,
+DE,800
 PS,8100
 PN,8007F
 SC,3F7F
 RE,0
-OL,1,C---------------------------------------
-OL,2,CSumu teksti-tv  800   Blogi            
-OL,3,C---------------------------------------
+OL,1,---------------------------------------
+OL,2,Sumu teksti-tv  800   Blogi            
+OL,3,---------------------------------------
 OL,6,   T{m{ on blogisivujen p{{sivu.        
 OL,7,Seuraavasta sivusta eteenp{in l|yd{t    
 OL,8,kronologisesti julkastut blogitekstit.  
@@ -19,3 +19,4 @@ OL,18,taiteesta ja siit{ her{{vist{ tunteista
 OL,19,sek{ my|s muista el{m{ni kokemuksista.  
 OL,21,Toivottavasti nautit lukea blogiani     
 OL,23,HYVI[ LUKUHETKI[!!!                     
+
