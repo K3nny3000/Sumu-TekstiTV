@@ -2,36 +2,154 @@
 <html lang="fi">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Sumu Teksti-TV</title>
   <style>
+    :root { --fg:#eee; --dim:#8f8f8f; --bg:#000; --panel:#111; }
+    html,body { height:100%; margin:0; }
     body {
-      background-color: #000;
-      color: #0f0;
-      font-family: monospace;
-      text-align: center;
-      margin: 0;
-      padding: 0;
-    }
-    iframe {
-      width: 100%;
-      height: 90vh;
-      border: none;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      display:flex; flex-direction:column; align-items:center;
     }
     header {
-      background-color: #111;
-      padding: 8px;
-      color: #0ff;
-      font-size: 20px;
+      width:100%; box-sizing:border-box;
+      background:#111; color:#6cf; padding:10px 14px; font-size:22px; text-align:center;
     }
+    .tv {
+      width:min(900px, 94vw);
+      margin:14px auto; padding:14px;
+      border:2px solid var(--dim); border-radius:8px;
+      background: #070707;
+      box-shadow: 0 0 0 3px #333 inset;
+    }
+    .bar {
+      color:#fff; border-bottom:1px solid var(--dim); padding:6px 0; margin-bottom:10px;
+      display:flex; justify-content:space-between;
+    }
+    .pageNum { color:#9f9; }
+    pre {
+      margin:0; white-space:pre; line-height:1.15; font-size:18px;
+      min-height:55vh;
+    }
+    .status { color:#9f9; margin:10px 0 6px; text-align:center; }
+    .pad { display:flex; justify-content:center; gap:8px; margin:6px 0 16px; }
+    input[type="text"]{
+      width:90px; background:#000; color:#fff; border:1px solid #666;
+      padding:6px 8px; font:inherit; text-align:center;
+    }
+    button{ background:#111; color:#fff; border:1px solid #666; padding:6px 10px; cursor:pointer; }
+    button:hover{ border-color:#999; }
   </style>
 </head>
 <body>
   <header>📺 Sumu Teksti-TV – by Timo Salminen</header>
-<iframe
-  src="https://peterkvt80.github.io/teletext-viewer/?service=https%3A%2F%2Fraw.githubusercontent.com%2Fk3nny3000%2FSumu-TekstiTV%2Fmain%2F"
-  title="Sumu Teletext">
-</iframe>
-</iframe>
+
+  <div class="tv">
+    <div class="bar">
+      <div id="bar-left">Sumu teksti-tv</div>
+      <div id="bar-mid">—</div>
+      <div id="bar-right">UUTISET</div>
+    </div>
+
+    <pre id="screen">(ladataan…)</pre>
+
+    <div class="status" id="status"></div>
+
+    <div class="pad">
+      <span>Syötä 3 numeroa (esim. 100, 500, 600, 800)</span>
+    </div>
+    <div class="pad">
+      <input id="goto" maxlength="3" placeholder="100"/>
+      <button id="ok">OK</button>
+      <button id="clr">C</button>
+    </div>
+  </div>
+
+<script>
+/*
+  YKSINKERTAINEN TTI-LUKIJA
+  - Ei koske kirjaimiin/numeroihin (ei katoavia ‘1’-merkkejä)
+  - Lukee DE-otsikon ja OL-rivit (OL,row,text)
+  - Renderöi 40-merkkisen rivin (täyttää tilalla jos lyhyempi)
+*/
+
+const screen = document.getElementById('screen');
+const statusEl = document.getElementById('status');
+const barMid = document.getElementById('bar-mid');
+
+async function loadPage(num){
+  const page = String(num).padStart(3,'0');           // “101”
+  const url = `${page}.tti`;                          // esim. 101.tti
+  statusEl.textContent = `Ladataan sivua ${page}…`;
+
+  try{
+    const res = await fetch(url, {cache: 'no-store'});
+    if(!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+    const raw = await res.text();
+
+    // Parsitaan
+    let declared = null;                               // DE-xxx
+    const rows = Array(25).fill('');                   // 1..24 käytössä
+
+    raw.split(/\r?\n/).forEach(line=>{
+      // DE,101 tms
+      if(line.startsWith('DE,')){
+        const m = line.match(/^DE\s*,\s*(\d{1,3})/i);
+        if(m){ declared = m[1]; }
+        return;
+      }
+      // OL,row,text
+      if(line.startsWith('OL,')){
+        const m = line.match(/^OL\s*,\s*(\d{1,2})\s*,\s*(.*)$/i);
+        if(!m) return;
+        const rowNum = parseInt(m[1],10);
+        let text = m[2] ?? '';
+
+        // EI poisteta mitään kirjaimia tai numeroita.
+        // Ainoa “normalisointi”: korvataan mahdolliset \t -> välilyönti
+        text = text.replace(/\t/g,' ');
+
+        // Rajataan 40 merkkiin ja täytetään tilalla jos lyhyt
+        if(text.length < 40) text = text + ' '.repeat(40 - text.length);
+        rows[rowNum] = text.slice(0,40);
+      }
+    });
+
+    // Näytä sivunumero DE:stä jos löytyi, muuten käyttäjän syöttämä
+    const pageNum = declared ?? page;
+    barMid.textContent = pageNum;
+
+    // Kokoa ruutu (Teletextissä 24 teksti­-riviä)
+    const body = [];
+    for(let i=1;i<=24;i++){
+      body.push((rows[i] || '').padEnd(40,' '));
+    }
+    screen.textContent = body.join('\n');
+
+    statusEl.textContent = `Sivu ${pageNum} ladattu.`;
+  }catch(err){
+    screen.textContent = `Virhe ladattaessa sivua ${num}:\n${String(err)}`;
+    statusEl.textContent = `Virhe sivulla ${num}.`;
+  }
+}
+
+// pikanäppäimet
+document.getElementById('ok').onclick = ()=>{
+  const v = document.getElementById('goto').value.trim();
+  if(/^\d{3}$/.test(v)) loadPage(v);
+};
+document.getElementById('clr').onclick = ()=>{
+  document.getElementById('goto').value='';
+  document.getElementById('goto').focus();
+};
+document.getElementById('goto').addEventListener('keydown', e=>{
+  if(e.key==='Enter') document.getElementById('ok').click();
+});
+
+// Etusivu
+loadPage(100);
+</script>
 </body>
 </html>
