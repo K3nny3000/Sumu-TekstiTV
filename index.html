@@ -1,165 +1,33 @@
 <!DOCTYPE html>
 <html lang="fi">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sumu Teksti-TV</title>
-<style>
-  body{
-    background:#000; color:#fff;
-    font-family:"Courier New",monospace;
-    margin:0; text-align:center;
-  }
-  h2{ margin:16px 0 6px; }
-  #view{
-    white-space:pre; text-align:left;
-    margin:10px auto; width:40ch; min-height:480px;
-    border:2px solid #555; padding:10px; background:#000;
-  }
-  #status{ color:#0f0; font-size:14px; margin:6px 0 10px; }
-  #numPad{
-    display:grid; grid-template-columns:repeat(3,1fr);
-    gap:6px; width:210px; margin:8px auto 24px;
-  }
-  #numPad button, #okBtn, #clrBtn{
-    background:#222; color:#fff; border:1px solid #555;
-    border-radius:4px; padding:10px; font-size:18px;
-  }
-  #numPad button:hover, #okBtn:hover, #clrBtn:hover{ background:#444; }
-  #input{ width:70px; text-align:center; font-size:18px; }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sumu Teksti-TV</title>
+  <style>
+    body {
+      background-color: #000;
+      color: #0f0;
+      font-family: monospace;
+      text-align: center;
+      margin: 0;
+      padding: 0;
+    }
+    iframe {
+      width: 100%;
+      height: 90vh;
+      border: none;
+    }
+    header {
+      background-color: #111;
+      padding: 8px;
+      color: #0ff;
+      font-size: 20px;
+    }
+  </style>
 </head>
 <body>
-
-<h2>Sumu Teksti-TV</h2>
-
-<div id="view">Ladataan...</div>
-<div id="status"></div>
-
-<div>
-  Syötä 3 numeroa (esim. 100, 500, 600, 800)<br>
-  <input id="input" maxlength="3" autocomplete="off">
-  <button id="okBtn" onclick="goToPage()">OK</button>
-  <button id="clrBtn" onclick="clr()">C</button>
-</div>
-
-<div id="numPad">
-  <button onclick="num(1)">1</button><button onclick="num(2)">2</button><button onclick="num(3)">3</button>
-  <button onclick="num(4)">4</button><button onclick="num(5)">5</button><button onclick="num(6)">6</button>
-  <button onclick="num(7)">7</button><button onclick="num(8)">8</button><button onclick="num(9)">9</button>
-  <span></span><button onclick="num(0)">0</button><span></span>
-</div>
-
-<script>
-  const view = document.getElementById("view");
-  const input = document.getElementById("input");
-  const statusEl = document.getElementById("status");
-
-  // Päivitä nämä omiin sivuihisi
-  const pages = {
-    100:"100.tti",
-    101:"101.tti",
-    500:"500.tti",
-    600:"600.tti",
-    800:"800.tti"
-  };
-
-  function setStatus(msg){ statusEl.textContent = msg; }
-  function num(n){ if(input.value.length<3) input.value += n; }
-  function clr(){ input.value = ""; input.focus(); }
-  function goToPage(){
-    const n = parseInt(input.value,10);
-    if(!isNaN(n)) loadPage(n);
-    clr();
-  }
-  input.addEventListener("keydown", e=>{
-    if(e.key==="Enter") goToPage();
-  });
-async function loadPage(n) {
-  const requested = parseInt(String(n).trim(), 10);
-  if (Number.isNaN(requested)) return;
-
-  try {
-    const res = await fetch(`${requested}.tti`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const raw = await res.text();
-
-    const rendered = renderTti(raw);
-    document.getElementById('page').textContent = rendered;
-
-    // tämä päivittää sekä vihreän rivin että otsikon oikeaksi
-    document.getElementById('curPage').textContent = requested;
-
-    // jos yläbannerissa on erillinen otsikko-elementti, päivitä sekin:
-    const header = document.querySelector('#page h2, #page h1, #pageHeader');
-    if (header) {
-      header.innerText = `Sumu teksti-tv ${requested} UUTISET`;
-    }
-
-    document.getElementById('status').innerHTML =
-      `Sivu <span id="curPage">${requested}</span> ladattu.`;
-  } catch (e) {
-    document.getElementById('page').textContent =
-      `Virhe ladattaessa sivua ${requested}:\n${e.message}`;
-  }
-}
-  async function loadPage(n){
-    const num = String(n);
-    if(!pages[n]){
-      setStatus(`Sivua ${num} ei ole (vielä).`);
-      view.textContent = `Virhe: sivua ${num} ei löytynyt.`;
-      return;
-    }
-    setStatus(`Ladataan sivua ${num}...`);
-    try{
-      const res = await fetch(pages[n], {cache:"no-store"});
-      if(!res.ok) throw new Error(res.status+" "+res.statusText);
-      const raw = await res.text();
-      const rendered = renderTTI(raw);
-      view.textContent = rendered;
-      setStatus(`Sivu ${num} ladattu.`);
-    }catch(err){
-      view.textContent = `Virhe ladattaessa sivua ${num}:\n${err.message}`;
-      setStatus(`Virhe sivulla ${num}.`);
-    }
-  }
-
-  // TTI → ruutu: näyttää OL-rivit, ääkköset oikein, poistaa QA/QB/QC-värikoodit
-  function renderTTI(raw){
-    const rows = Array.from({length:24}, ()=>"");
-    const lines = raw.replace(/\r\n/g,"\n").split("\n");
-
-    // Suomi/Ruotsi-merkistö
-    const map = {"[":"Ä","\\":"Ö","]":"Å","{":"ä","|":"ö","}":"å"};
-    const xlat = s => s.replace(/[\[\]\\\]\{\|\}]/g, ch => map[ch] || ch);
-
-    for(const line of lines){
-      if(!line.startsWith("OL,")) continue;
-      const parts = line.split(",");
-      if(parts.length<3) continue;
-
-      const rowNum = parseInt(parts[1],10);
-      if(!(rowNum>=1 && rowNum<=24)) continue;
-
-      // Ota tekstiosa (säilytä pilkut tekstissä)
-      let text = parts.slice(2).join(",");
-
-      // Poista mahdollisia ohjauskoodeja (varotoimi)
-      text = text.replace(/\x1b\[[0-9;]*m/g,"");   // ANSI
-      text = text.replace(/(^|\s)Q[A-Z](?=\s|$)/g,""); // QA/QB/QC jne.
-      text = text.replace(/\x0[0-9A-F]/g,"");      // 0x00–0x0F kontrollit
-      text = xlat(text);
-      text = text.replace(/[\x00-\x1F\u25A11]/g,"");
-
-      rows[rowNum-1] = text; 
-    }
-    // 40 merkkiä / rivi
-    return rows.map(r => (r + "                                        ").slice(0,40)).join("\n");
-  }
-
-  // Lataa etusivu
-  loadPage(100);
-</script>
-
+  <header>📺 Sumu Teksti-TV – by Timo Salminen</header>
+  <iframe src="https://peterkvt80.github.io/teletext-viewer/?service=https://<timosalminen>.github.io/<sumu-tekstitv>/" title="Sumu Teletext"></iframe>
 </body>
 </html>
