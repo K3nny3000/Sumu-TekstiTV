@@ -124,7 +124,8 @@
       text = xlat(text);
       text = text.replace(/[\x00-\x1F\u25A11]/g,"");
       text = text.replace(/^\s*[A-D](?=\s)/,"");
-      rows[rowNum-1] = text;
+      text = text.replace(/^[A-D](?=\S)/gm, "");
+      rows[rowNum-1] = text; 
     }
     // 40 merkkiä / rivi
     return rows.map(r => (r + "                                        ").slice(0,40)).join("\n");
