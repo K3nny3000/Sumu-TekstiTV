@@ -123,10 +123,11 @@
       text = text.replace(/\x0[0-9A-F]/g,"");      // 0x00–0x0F kontrollit
       text = xlat(text);
       text = text.replace(/[\x00-\x1F\u25A11]/g,"");
+      text = text.replace(/^\s*[A-D](?=\s)/,"");
       rows[rowNum-1] = text;
     }
     // 40 merkkiä / rivi
-    return rows.map(r => r.padEnd(40," ")).join("\n");
+    return rows.map(r => r.slice(0,40),padEnd(40,"")).join("\n");
   }
 
   // Lataa etusivu
